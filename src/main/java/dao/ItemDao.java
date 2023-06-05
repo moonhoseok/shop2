@@ -30,6 +30,7 @@ public class ItemDao {
 		param.clear();
 		param.put("id", id);
 		// item 테이블의 id값의 해당하는 내용을  Item 객체의 목록 리턴. 한 건만 리턴
+		// selectOne() : 리턴되는 데이터의 레코드 갯수가 한개인 경우 
 		return template.selectOne("dao.mapper.ItemMapper.select",param);
 		//return template.getMapper(cls).select(param).get(0);
 	}

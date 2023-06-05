@@ -14,8 +14,8 @@ public interface SaleItemMapper {
 			+ " values(#{saleid}, #{seq},#{itemid},#{quantity})")
 	void insert(SaleItem saleItem);
 
-	@Select({"select * from saleitem <if test='saleid != null'>"
-			+ " where saleid = #{saleid} </if>"})
+	@Select({"select * from saleitem "
+			+ " where saleid = #{saleid}"})
 	List<SaleItem> select(Map<String, Object> param);
 
 }

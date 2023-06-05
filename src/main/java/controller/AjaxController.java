@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 /*
@@ -30,9 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
  * spring 4.0 이전 버전에서는 @ResponseBody 기능으로 설정하였음
  * @ResponseBody 어노테이션은 메서드에 설정함
  */
+
+import logic.ShopService;
 @RestController // 뷰(jsp)가 없음
 @RequestMapping("ajax")
 public class AjaxController {
+	@Autowired
+	ShopService service ;
 	
 	@RequestMapping("select")
 	public List<String> select(String si, String gu, 
@@ -215,6 +221,17 @@ public class AjaxController {
 		return map;
 	}	
 	
+	@RequestMapping("graph1")
+	public List<Map.Entry<String, Integer>> graph1(String id){
+		Map<String, Integer> map = service.graph1(id); // {"홍길동":10,"김삿갓":7,...}
+		List<Map.Entry<String, Integer>> list = new ArrayList<>();
+		for(Map.Entry<String, Integer> m : map.entrySet() ) {
+			list.add(m);
+		}
+		System.out.println("graph list");
+		Collections.sort(list,(m1,m2)->m2.getValue() - m1.getValue()); // 등록건수의 내림차순 정렬
+		return list;
+	}
 	
 	
 	
