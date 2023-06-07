@@ -6,6 +6,31 @@ import javax.validation.constraints.NotEmpty;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+/*
+ * lombok : setter,getter,toString, 생성자들을 자동 생성해주는 유틸리티.
+ * lombok 사용
+ * 		- lombok 설치 : https://projectlombok.org -> download => lombok.jar 파일 다운
+ * 				cmd창 열기 => lombok.jar 파일의 폴더로 이동
+ * 				java -jar lombok.jar 실행
+ * 				eclipse.exe 선택 후 install 실행 
+ * 		- lombok 관련 jar 파일설치
+ * 			- pom.xml 설정
+ * lombok에서 사용하는 어노테이션 설명
+ * 		@Setter : 자동으로 setter 소스 생성
+ *		@Getter : 자동으로 getter 소스 생성
+ *		@ToString : 자동으로 모든멤버를 출력하도록 toString 소스 생성
+ *		@EqualsAndHashCode : equals 함수와 hashCode 함수를 자동 오버라이딩
+ * 		@Data : Getter, Setter, ToString, EqualsAndHashCode
+ * 		@AllArgsContructor : 모든 멤버를 매개변수로 가지고있는 생성자 구현
+ * 		@NoArgsContructor : 매개변수 없는 생성자 구현
+ * 		@RequiredArgConstructor : final, @NotNull 인 멤버변수만 매개변수로 갖는 생성자 구현
+ */
+@Setter
+@Getter
+@ToString
 public class Board {
 	private int num;
 	@NotEmpty(message ="글쓴이를 입력하세요")
@@ -24,100 +49,5 @@ public class Board {
 	private int grp;
 	private int grplevel;
 	private int grpstep;
-	private int commcnt;
-	// getter, setter, toString
-	public int getNum() {
-		return num;
-	}
-	public void setNum(int num) {
-		this.num = num;
-	}
-	public String getWriter() {
-		return writer;
-	}
-	public void setWriter(String writer) {
-		this.writer = writer;
-	}
-	public String getPass() {
-		return pass;
-	}
-	public void setPass(String pass) {
-		this.pass = pass;
-	}
-	public String getTitle() {
-		return title;
-	}
-	public void setTitle(String title) {
-		this.title = title;
-	}
-	public String getContent() {
-		return content;
-	}
-	public void setContent(String content) {
-		this.content = content;
-	}
-	public String getBoardid() {
-		return boardid;
-	}
-	public void setBoardid(String boardid) {
-		this.boardid = boardid;
-	}
-	public MultipartFile getFile1() {
-		return file1;
-	}
-	public void setFile1(MultipartFile file1) {
-		this.file1 = file1;
-	}
-	public String getFileurl() {
-		return fileurl;
-	}
-	public void setFileurl(String fileurl) {
-		this.fileurl = fileurl;
-	}
-	public Date getRegdate() {
-		return regdate;
-	}
-	public void setRegdate(Date regdate) {
-		this.regdate = regdate;
-	}
-	public int getReadcnt() {
-		return readcnt;
-	}
-	public void setReadcnt(int readcnt) {
-		this.readcnt = readcnt;
-	}
-	public int getGrp() {
-		return grp;
-	}
-	public void setGrp(int grp) {
-		this.grp = grp;
-	}
-	public int getGrplevel() {
-		return grplevel;
-	}
-	public void setGrplevel(int grplevel) {
-		this.grplevel = grplevel;
-	}
-	public int getGrpstep() {
-		return grpstep;
-	}
-	public void setGrpstep(int grpstep) {
-		this.grpstep = grpstep;
-	}
-	public int getCommcnt() {
-		return commcnt;
-	}
-	public void setCommcnt(int commcnt) {
-		this.commcnt = commcnt;
-	}
-	@Override
-	public String toString() {
-		return "Board [num=" + num + ", writer=" + writer + ", pass=" + pass + ", title=" + title + ", content="
-				+ content + ", boardid=" + boardid + ", file1=" + file1 + ", fileurl=" + fileurl + ", regdate="
-				+ regdate + ", readcnt=" + readcnt + ", grp=" + grp + ", grplevel=" + grplevel + ", grpstep=" + grpstep
-				+ ", commcnt=" + commcnt + "]";
-	}
-	
-
-	
+	private int commcnt;	
 }

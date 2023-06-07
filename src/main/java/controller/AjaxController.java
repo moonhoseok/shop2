@@ -220,7 +220,11 @@ public class AjaxController {
 //		return trlist;
 		return map;
 	}	
-	
+	/*
+	 * List 객체 : 클라이언트에 배열객체로 전달
+	 * Map.Entry<String, Integer> 객체 : Json 형식으로 클라이언트로 전달
+	 * =>[{홍길동:10},{김삿갓:7},..] 형태로 전달
+	 */
 	@RequestMapping("graph1")
 	public List<Map.Entry<String, Integer>> graph1(String id){
 		Map<String, Integer> map = service.graph1(id); // {"홍길동":10,"김삿갓":7,...}
@@ -233,7 +237,12 @@ public class AjaxController {
 		return list;
 	}
 	
-	
+	@RequestMapping("graph2")
+	public List<Map.Entry<String, Integer>> graph2(String id){
+		Map<String, Integer> map = service.graph2(id); // {"홍길동":10,"김삿갓":7,...}
+		List<Map.Entry<String, Integer>> list = new ArrayList<>(map.entrySet());
+		return list;
+	}
 	
 	
 	

@@ -83,5 +83,9 @@ public class BoardDao {
 	public List<Map<String, Object>> graph1(String id) {
 		return template.getMapper(cls).graph1(id);
 	}
+
+	public List<Map<String, Object>> graph2(String id) {
+		return template.getMapper(cls).graph2(id);
+	}
 	
 }

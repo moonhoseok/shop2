@@ -103,7 +103,7 @@ html,body,h1,h2,h3,h4,h5 {font-family: "Raleway", sans-serif}
 
   <div class="w3-row-padding w3-margin-bottom">
     <div class="w3-half">
-      <div class="w3-container w3-red w3-padding-16">
+      <div class="w3-container w3-padding-16">
       <input type="radio" name="pie" onchange="piegraph(2)"
       		checked="checked">자유게시판&nbsp;&nbsp;
       <input type="radio" name="pie" onchange="piegraph(3)">QnA&nbsp;&nbsp;
@@ -112,14 +112,14 @@ html,body,h1,h2,h3,h4,h5 {font-family: "Raleway", sans-serif}
      	</div>		
       </div>
     </div>
-    
+    <%-- 최근 7일간 등록된 게시글 건수 막대그래프와 선그래프를 동시에 출력하기  --%>
     <div class="w3-half">
-    	<div class="w3-container w3-blue w3-padding-16">
-      	<input type="radio" name="barline" onchange="barline(2)"
+    	<div class="w3-container w3-padding-16">
+      	<input type="radio" name="barline" onchange="barlinegraph(2)"
       		checked="checked">자유게시판&nbsp;&nbsp;
-      	<input type="radio" name="barline" onchange="barline(3)">QnA&nbsp;&nbsp;
+      	<input type="radio" name="barline" onchange="barlinegraph(3)">QnA&nbsp;&nbsp;
       		<div id="barcontainer" style="width: 100%; border: 1px solid #ffffff">
-      			<canvas id="canvas1" style="width:100%"></canvas>
+      			<canvas id="canvas2" style="width:100%"></canvas>
      		</div>
       	</div>
     </div>
@@ -193,7 +193,8 @@ function w3_close() {
 		getSido()	// sido.txt 파일을 읽어서 시도 정보 조회
 //		exchangeRate() // 수출입은행 환율 정보 조회
 		exchangeRate2() // 수출입은행 환율 정보 조회. 서버에서 배열로 전송받아서 화면에 출력하기
-		piegraph(2) 
+		piegraph(2)		// 글쓴이별 게시글 건수를 파이그래프 출력
+		barlinegraph(2) // 최근 7일간 게시글 등록 건수 막대선그래프 출력
 		
 	})
 	function getSido(){ // 서버에서 리스트객체를 배열로 직접 전달 받음
@@ -326,25 +327,40 @@ let randomColor = function(opa) {
 }
 function piegraph(id) { //2
      $.ajax("${path}/ajax/graph1?id="+id,{
-    	 success : function(arr) {
+    	 success : function(json) { // json :[{홍길동:10},{김삿갓:7},..] 배열 객체로전달
     		 let canvas = "<canvas id='canvas1' style='width:100%'></canvas>"
-    		 $("#piecontainer").html(canvas)
-    		 pieGraphPrint(arr,id)
+    		 $("#piecontainer").html(canvas) //새로운 캔버스 객체로 생성
+    		 pieGraphPrint(json,id)
     	 },
     	 error : function(e) {
-    		 alert("서버오류 graph:" +e.status)
+    		 alert("서버오류 graph1:" +e.status)
     	 }
      })	
+}
+function barlinegraph(id){
+	// url : ${path}/ajax/graph2 => 서버요청 url
+	$.ajax("${path}/ajax/graph2?id="+id,{
+		// arr : [{"2023-06-01":10},{"2023-05-30":20},...]
+		success : function(arr){ 
+			let canvas = "<canvas id='canvas2' style='width:100%'></canvas>"
+	    		 $("#barcontainer").html(canvas) //새로운 캔버스 객체로 생성
+			barGraphPrint(arr,id); //그래프 작성
+		},
+		error : function(e){
+			alert("서버오류 : "+e.status)
+		}
+	})
 }
 //json : 서버에서 전송해준 데이터값.
 //json : [{"홍길동":10},{"김삿갓":7},....]
 function pieGraphPrint(arr,id) {
 	let colors = []  //임의의 색상 지정
-	let writers = []
-	let datas = []
+	let writers = [] //글쓴이 목록 설정
+	let datas = []	//글작성 건수 목록 설정
 	$.each(arr,function(index){
-		colors[index] = randomColor(0.5)
-		for(key in arr[index]) {
+		colors[index] = randomColor(0.5) // 임의의 색상 설정
+		for(key in arr[index]) { // {"홍길동":10}
+			// key : 홍길동
 			writers.push(key) //글쓴이
 			datas.push(arr[index][key]) //글작성건수
 		}
@@ -368,6 +384,54 @@ function pieGraphPrint(arr,id) {
 			}
 	}
 	let ctx = document.getElementById("canvas1")
+	new Chart(ctx,config)
+}
+//============================
+function barGraphPrint(arr,id) {
+	let colors = []  //임의의 색상 지정
+	let regdate = [] //글쓴이 목록 설정
+	let datas = []	//글작성 건수 목록 설정
+	$.each(arr,function(index){
+		colors[index] = randomColor(0.5) // 임의의 색상 설정
+		for(key in arr[index]) { // {"2023-06-01":10}
+			regdate.push(key) //작성일자
+			datas.push(arr[index][key]) //글작성건수
+		}
+	})
+	let title = (id == 2)?"자유게시판":"QNA"
+	let config = {
+			type : 'bar',   //그래프 종류
+			data : {        //데이터 정보
+				datasets : [
+					{
+					 type : "line", borderWidth : 2,  borderColor : colors,
+				 	 label : "건수", fill : false, data :datas
+					},
+				 {type :"bar", backgroundColor : colors, label : "건수", data : datas}
+				],
+				labels : regdate,
+				},
+			options : {
+				responsive : true,
+				legend : {display:true},
+			    title : {
+			    	display : true,
+			    	text : '최근 7일 ' + title + " 등록건수",
+			    	position : 'bottom'
+			    },
+			    scales :{
+			    	xAxes :[{
+			    		display : true,
+			    		scaleLabel : {display :true, labelString : "작성일자"}
+			    	}],
+			    	yAxes :[{
+			    		scaleLabel : {display : true, labelString : "게시물 등록 건수"},
+			    		ticks : {beginAtZero :true}
+			    	}]
+			    }
+			}
+	}
+	let ctx = document.getElementById("canvas2")
 	new Chart(ctx,config)
 }
 </script>

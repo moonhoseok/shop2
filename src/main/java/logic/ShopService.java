@@ -1,9 +1,11 @@
 package logic;
 
 import java.io.File;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -237,17 +239,30 @@ public class ShopService {
 
 	// {"홍길동":10,"김삿갓":7,...}
 	public Map<String, Integer> graph1(String id) { // 게시판 종류별, 작성자별 등록건수 출력
+		// list : [{writer :홍길동,cnt :10},{writer:김삿갓,cnt:7},..]
 		List<Map<String,Object>> list = boarddao.graph1(id);
 		//list => map 형태로 변경하여 Controller로 리턴
 		Map<String, Integer> map = new HashMap<>();
-		for(Map<String,Object> s1 :list) {
-			for(Map.Entry<String, Object> s2 : s1.entrySet()) {
-				String key = s2.getKey();
-				Integer value = (Integer)s2.getValue();
-				map.put(key, value);
-			}
+		for(Map<String,Object> m :list) {
+			String writer =(String)m.get("writer");//홍길동
+			long cnt = (Long)m.get("cnt"); // count(*) 형태의 데이터는 long타입으로 전달
+			map.put(writer, (int)cnt);// {"홍길동":10,"김삿갓":7}
 		}
 		System.out.println("=============="+map);
 		return map;
+	}
+
+	public Map<String, Integer> graph2(String id) {
+		// list : [{day : 2023-06-07, cnt:10},...]
+		List<Map<String,Object>> list = boarddao.graph2(id);
+		// TreeMap : key값으로 요소들을 정렬.
+		// Comparator.reverseOrder() : 내림차순 정렬로 설정.(오름차순기본)
+		Map<String, Integer> map = new TreeMap<>(Comparator.reverseOrder());
+		for(Map<String,Object> m :list) {
+			String day =(String)m.get("day");//
+			long cnt = (Long)m.get("cnt"); // count(*) 형태의 데이터는 long타입으로 전달
+			map.put(day, (int)cnt);// 
+		}
+		return map; // {2023-06-07:10,..}
 	}
 } 
