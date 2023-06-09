@@ -26,12 +26,15 @@ import exception.BoardException;
 import exception.LoginException;
 import logic.Board;
 import logic.ShopService;
+import util.CipherUtil;
 
 @Controller
 @RequestMapping("board")
 public class BoardController {
 	@Autowired
 	private ShopService service;
+	@Autowired
+	private CipherUtil cipher;
 	
 	@GetMapping("*") // 설정되지 않은 모든 요청시 호출되는 메서드 
 	public ModelAndView write() {

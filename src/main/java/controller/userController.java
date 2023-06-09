@@ -1,7 +1,14 @@
 package controller;
 
+import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.List;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -22,12 +29,48 @@ import logic.Item;
 import logic.Sale;
 import logic.ShopService;
 import logic.User;
+import util.CipherUtil;
 
 @Controller
 @RequestMapping("user")
 public class userController {
 	@Autowired
 	private ShopService service;
+	@Autowired
+	private CipherUtil cipher;
+	private final static byte[] iv = new byte[] {
+			(byte)0x8E,0x12,0x39,(byte)0x9,
+				0x07,0x72,0x6F,(byte)0x5A,
+			(byte)0x8E,0x12,0x39,(byte)0x9,
+				0x07,0x72,0x6F,(byte)0x5A
+	};
+	private String passwordHash(String password){
+		try {
+			return cipher.makehash(password, "SHA-512");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	private String emailEncrypt(String email, String userid){
+		try {
+			String key = cipher.makehash(userid, "SHA-256");
+			return cipher.encrypt(email, key);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null; // 문자열로 암호문 리턴
+	}
+	private String emailDecrypt(User user){
+		try {
+			String key = cipher.makehash(user.getUserid(), "SHA-256");
+			return cipher.decrypt(user.getEmail(), key);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null; // 문자열로 암호문 리턴
+	}
+	//===================================================================
 	// idsearch , pwsearch
 	@GetMapping("*") // * : 설정되지 않은 모든요청시 호출되는 메서드
 	public ModelAndView join () {
@@ -35,8 +78,8 @@ public class userController {
 		mav.addObject(new User());
 		return mav;
 	}
-	@PostMapping("join")
-	public ModelAndView userAdd(@Valid User user, BindingResult bresult) {
+	@PostMapping("join") // 회원가입
+	public ModelAndView userAdd(@Valid User user, BindingResult bresult) throws NoSuchAlgorithmException {
 		ModelAndView mav = new ModelAndView();
 		if(bresult.hasErrors()) {
 			mav.getModel().putAll(bresult.getModel());
@@ -45,9 +88,15 @@ public class userController {
 			bresult.reject("error.input.check");
 			return mav;
 		}
-		// 정상입력값 : 회원가입하기 => db의 useraccount 테이블에 저장
+		// 정상입력값 : 회원가입하기 => db의 usersecutiry 테이블에 저장
 		try {
-			service.userinsert(user);
+			/*
+			 * password : SHA-512 해쉬값 변경
+			 * email 	: AES 알고리즘으로 암호화
+			 */
+			user.setPassword(passwordHash(user.getPassword()));
+			user.setEmail(emailEncrypt(user.getEmail(), user.getUserid()));
+			service.userinsert(user); //암호화작업 후 insert
 			mav.addObject("user",user);
 		} catch (DataIntegrityViolationException e) {
 			// DataIntegrityViolationException : db등록시 Key값 중복 오류 발생
@@ -60,6 +109,7 @@ public class userController {
 		mav.setViewName("redirect:login");
 		return mav;
 	}
+
 	
 	@PostMapping("login")
 	public ModelAndView login
@@ -71,7 +121,7 @@ public class userController {
 			return mav;
 		}
 		//1. userid 맞는 User를 db에서 조회하기
-		User dbUser = service.selectUserOne(user.getUserid());
+		User dbUser = (service.selectUserOne(user.getUserid()));
 		if(dbUser ==null) {//조회된 데이터가 없는 경우 
 			bresult.reject("error.login.id"); //아이디를 확인하세요 
 			mav.getModel().putAll(bresult.getModel());
@@ -81,6 +131,9 @@ public class userController {
 		//   일치 : session.setAttribute("loginUser",dbUser) => 로그인 정보
 		//   불일치 : 비밀번호를 확인하세요. 출력 (error.login.password)
 		//3. mypage로 페이지 이동 => 404 오류 발생 (임시)
+		// dbUser.getPassword() : SHA-512 해쉬값으로 저장
+		// user.getPassword() : 입력받은 데이터 => SHA-512 해쉬값으로 변경필요 , 비밀번호 비교
+		user.setPassword(passwordHash(user.getPassword()));
 		if(user.getPassword().equals(dbUser.getPassword())) { //정상 로그인
 			session.setAttribute("loginUser", dbUser);
 			mav.setViewName("redirect:mypage?userid="+user.getUserid());
@@ -105,6 +158,7 @@ public class userController {
 		ModelAndView mav = new ModelAndView();
 		User user = service.selectUserOne(userid);
 		List<Sale> salelist = service.salelist(userid);
+		user.setEmail(emailDecrypt(user));
 		mav.addObject("user", user); //회원정보데이터
 		mav.addObject("salelist", salelist);  //주문목록
 		return mav;
@@ -124,6 +178,7 @@ public class userController {
 	public ModelAndView idCheckUpdate(String userid,HttpSession session) {
 		ModelAndView mav = new ModelAndView();
 		User user = service.selectUserOne(userid);
+		user.setEmail(emailDecrypt(user));
 		mav.addObject("user", user); //회원정보데이터
 		return mav;
 	}
@@ -226,12 +281,13 @@ public class userController {
 		User loginUser = (User)session.getAttribute("loginUser");
 		//비밀번호 불일치
 		//user.getPassword() : 회원이 입력한 비밀번호
-		if(!user.getPassword().equals(loginUser.getPassword())) {
+		if(!this.passwordHash(user.getPassword()).equals(loginUser.getPassword())) {
 			bresult.reject("error.login.password");
 			return mav;
 		}
 		// 비밀번호 일치
 		try {
+			user.setEmail(this.emailEncrypt(user.getEmail(), user.getUserid()));
 			service.userupdate(user);
 			if(loginUser.getUserid().equals(user.getUserid())) {
 				session.setAttribute("loginUser",user);

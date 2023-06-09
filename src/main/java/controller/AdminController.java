@@ -37,6 +37,7 @@ import exception.LoginException;
 import logic.Mail;
 import logic.ShopService;
 import logic.User;
+import util.CipherUtil;
 
 /*
  * AdminController 의 모든 메서드들은 반드시 관리자로 로그인 해야만 실행가능함.
@@ -49,6 +50,8 @@ import logic.User;
 public class AdminController {
 	@Autowired
 	private ShopService service;
+	@Autowired
+	private CipherUtil cipher;
 	
 	@GetMapping("*") // * : 설정되지 않은 모든요청시 호출되는 메서드
 	public ModelAndView join () {
@@ -56,12 +59,25 @@ public class AdminController {
 		mav.addObject(new User());
 		return mav;
 	}
+	private List<User> emailDecrypt(List<User> userList) {
+		for(User u : userList) {
+			try {
+				// userid를 SHA-256 알고리즘으로 해쉬값의 앞 16자리를 키로 설정 약속함
+				String key = cipher.makehash(u.getUserid(), "SHA-256");
+				String email = cipher.decrypt(u.getEmail(),key);
+				u.setEmail(email);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return userList;
+	}
 	
 	@RequestMapping("list")
 	public ModelAndView list(String sort,HttpSession session) {
 		ModelAndView mav = new ModelAndView();
 		//list : db에 등록된 모든 회원 정보 저장목록
-		List<User> list = service.userList(); //전체 회원목록 조회
+		List<User> list = emailDecrypt(service.userList()); //전체 회원목록 조회
 		if(sort != null) {
 			switch (sort) {
 				case "10" : 
@@ -105,6 +121,8 @@ public class AdminController {
 		return mav;
 	}
 	
+
+
 	@RequestMapping("mailForm")
 	public ModelAndView mailform(String[] idchks, HttpSession session) {
 		// String[] idchks : idchks 파라미터의 값 여러개 가능. request.getParamaterValues("파라미터")
@@ -112,7 +130,8 @@ public class AdminController {
 		if(idchks == null || idchks.length == 0) {
 			throw new LoginException("메일을 보낼 대상자를 선택하세용","list");
 		}
-		List<User> list = service.getUserList(idchks);
+		// emailDecrypt : 회원목록 데이터에서 이메일 부분만 복화하 하여 리턴
+		List<User> list = emailDecrypt(service.getUserList(idchks));
 		mav.addObject("list",list);
 		return mav;
 	}

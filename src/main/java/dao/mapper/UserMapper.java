@@ -12,14 +12,14 @@ import logic.User;
 
 public interface UserMapper {
 	
-	@Insert("insert into useraccount (userid,username,password,"
+	@Insert("insert into usersecurity (userid,username,password,"
 			+" birthday, phoneno, postcode, address, email) values"
 			+" (#{userid},#{username},#{password},#{birthday},"
 			+ "#{phoneno},#{postcode},#{address},#{email})")
 	void insert(User user);
 
 	@Select({"<script>",
-			"select * from useraccount ",
+			"select * from usersecurity ",
 			"<if test = 'userid != null'> where userid =#{userid}</if>",
 			"<if test = 'userids != null'> where userid in "
 			+"<foreach collection ='userids' item='id' separator=',' "
@@ -28,19 +28,19 @@ public interface UserMapper {
 			"</script>"})
 	List<User> select(Map<String, Object> param);
 
-	@Update("update useraccount set username=#{username}, birthday=#{birthday},"
+	@Update("update usersecurity set username=#{username}, birthday=#{birthday},"
 		+ " phoneno=#{phoneno},postcode=#{postcode}, address=#{address},"
 		+ " email=#{email} where userid=#{userid}")
 	void update(User user);
 
-	@Delete("delete from useraccount where userid=#{userid}")
+	@Delete("delete from usersecurity where userid=#{userid}")
 	void delete(Map<String,Object> param);
 
-	@Update("update useraccount set password=#{chgpass} where userid=#{userid}")
+	@Update("update usersecurity set password=#{chgpass} where userid=#{userid}")
 	void pwupdate(Map<String, Object> param);
 
 	@Select({"<script>",
-			"select ${col} from useraccount where email=#{email} and phoneno=#{phoneno}",
+			"select ${col} from usersecurity where email=#{email} and phoneno=#{phoneno}",
 			"<if test='userid != null'> and userid =#{userid} </if>",
 			"</script>"})
 	String search(Map<String, Object> param);
