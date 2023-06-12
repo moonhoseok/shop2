@@ -321,7 +321,7 @@ public class userController {
 			("비밀번호를 확인하세요", "password?userid="+loginUser.getUserid());
 		}
 		try {
-			service.userpassword(loginUser.getUserid(), chgpass);
+			service.userChgpass(loginUser.getUserid(), chgpass);
 			User user = service.selectUserOne(loginUser.getUserid());
 			//session.setAttribute("loginUser",user); // 로그인정보에 바뀐 정보로 수정
 			loginUser.setPassword(chgpass);
@@ -332,61 +332,89 @@ public class userController {
 				("비밀번호 수정 실패","mypage?userid="+loginUser.getUserid());
 		}
 	}
-	//"{url}search" : ${url} 지정되지 않음. *search 인 요청시 호출되는 메서드
-	@PostMapping("{url}search")
-	public ModelAndView search(User user, BindingResult bresult, @PathVariable String url) {
-		//@PathVariable : {url}의 이름을 매개변수로 전달
-		// 요청 : idsearch : url <= "id"
-		// 요청 : pwsearch : url <= "id"
-		ModelAndView mav = new ModelAndView();
-		String code = "error.userid.search";
-		String title = "아이디";
-		if(url.equals("pw")) { // 비밀번호 검증인 경우
-			title = "비밀번호";
-			code ="error.password.search";
-			if(user.getUserid()==null || user.getUserid().trim().equals("")) {
-				// BindingResult.reject() : global error
-				// => jsp의 <spring:hasBindError...> 부분에 오류 출력
-				// BindingResult.rejectValue() :
-				// => jsp의 <form:error path="" ...> 부분에 오류 출력
-				bresult.rejectValue("userid","error.required"); // error.required.userid 오류코드
+	// {url}search : {url} 지정되지 않음. *search 인 요청시 호출되는 메서드
+		@PostMapping("{url}search")
+		public ModelAndView search(User user, BindingResult bresult, @PathVariable String url) {
+			//@PathVariable : {url} 의 이름을 매개변수로 전달.
+			//   요청 : idsearch : url <= "id"
+			//   요청 : pwsearch : url <= "pw"
+			ModelAndView mav = new ModelAndView();
+			String code = "error.userid.search";
+			String title = "아이디";
+			if(url.equals("pw")) { //비밀번호 검증인 경우
+				title = "비밀번호";
+				code = "error.password.search";
+				if(user.getUserid() == null || user.getUserid().trim().equals("")) {
+					//BindingResult.reject() : global error 
+					//    => jsp의 <spring:hasBindErrors ... 부분에 오류출력 
+					//BindingResult.rejectValue() : 
+					//   => jsp의 <form:errors path= ...  부분에 오류출력 
+					bresult.rejectValue("userid", "error.required"); //error.required.userid 오류코드 
+				}
 			}
-		}
-		if(user.getEmail()==null || user.getEmail().trim().equals("")) {
-			bresult.rejectValue("email","error.required");
-			// error.required.email 오류코드
-		}
-		if(user.getPhoneno()==null || user.getPhoneno().trim().equals("")) {
-			bresult.rejectValue("phoneno","error.required");
-			// error.required.phoneno 오류코드
-		}
-		if(bresult.hasErrors()) {
-			mav.getModel().putAll(bresult.getModel());
+			if(user.getEmail() == null || user.getEmail().trim().equals("")) {
+				bresult.rejectValue("email", "error.required"); //error.required.email 오류코드 
+			}
+			if(user.getPhoneno() == null || user.getPhoneno().trim().equals("")) {
+				bresult.rejectValue("phoneno", "error.required"); //error.required.phoneno  오류코드
+			}
+			if(bresult.hasErrors()) {
+				mav.getModel().putAll(bresult.getModel());
+				return mav;
+			}
+			//입력검증 정상완료.
+			if(user.getUserid() != null && user.getUserid().trim().equals(""))
+				user.setUserid(null);
+			/*                                         result
+			 * user.getUserid() == null : 아이디찾기 =>  아이디값 저장
+			 * user.getUserid() != null : 비밀번호찾기 => 비밀번호값 저장
+			 */
+			String result = null;
+			if(user.getUserid() == null) { // 아이디 찾기
+				// 전화번호 기준으로 회원목록 조회 => 이메일로는 검증 안됨
+				List<User> list =service.getUserlist(user.getPhoneno());
+				System.out.println(list);
+				for(User u : list) {
+					// u 객체의 email 정보 : 암호화상태
+					// emailDecrypt(u) : 이메일 복호화
+					System.out.println("email:"+this.emailDecrypt(u));				
+					u.setEmail(this.emailDecrypt(u)); // 복호화된 이메일로 저장 => 입력된 이메일과 비교
+					// u.getEmail() : db에 저장된 이메일을 복호화 한 데이터
+					// user.getEmail() : 입력된 이메일 데이터 
+					if(u.getEmail().equals(user.getEmail())) { //검색성공. 복호회된 이메일로 비교.
+						result = u.getUserid();
+					}
+				}
+			} else { // 비밀번호 초기화 
+				// 이메일 암호화
+				user.setEmail(this.emailEncrypt(user.getEmail(), user.getUserid()));
+				result =  service.getSearch(user); //mybatis 구현시 해당 레코드가 없는 경우 결과값이 null임
+	            									//결과값이 없는 경우 예외발생 없음 		
+				if(result != null) { // 비밀번호 검색 성공 => 초기화. db에 비밀번호를 변경
+					String pass = null;
+				try {
+					pass= cipher.makehash(user.getUserid(),"SHA-512");
+				} catch (NoSuchAlgorithmException e) {
+					e.printStackTrace();
+				}
+				// pass : 아이디의 "SHA-512"로 계산한 해쉬값
+				int index =(int)(Math.random()*(pass.length()-10)); // 비밀번호 해쉬값 일부분
+				result = pass.substring(index,index+6);	// pass 값의 임의의 위치에서 6자리값 선택
+				// 비밀번호 변경 => 비밀번호 초기화
+				service.userChgpass(user.getUserid(),passwordHash(result));
+				}	
+			}
+			if(result ==null) { // 아이디 또는 비밀번호 검색 실패.
+				bresult.reject(code);
+				mav.getModel().putAll(bresult.getModel());
+				return mav;
+			}
+			System.out.println("result = "+ result);
+			mav.addObject("result",result);
+			mav.addObject("title",title);
+			mav.setViewName("search");
 			return mav;
 		}
-		//입력값검증 정상완료 후
-		if(user.getUserid() != null && user.getUserid().trim().equals("")) {
-			user.setUserid(null);
-		}
-		/*										result
-		 * user.getUserid() == null : 아이디찾기 => 아이디
-		 * user.getUserid() != null : 비밀번호찾기 => 비밀번호
-		 */
-		
-		//mybatis 구현시 레코드가 없는경우 결과값이 null임
-		//결과값이 없는 경우 예외발생 없음
-		String result = service.getSearch(user); 
-		if(result == null) {
-			bresult.reject(code);
-			mav.getModel().putAll(bresult.getModel());
-			return mav;
-		}
-		System.out.println("result = " +result);
-		mav.addObject("result",result);
-		mav.addObject("title",title);
-		mav.setViewName("search");
-		return mav;
-	}
 	
 	
 	

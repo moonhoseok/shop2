@@ -25,6 +25,7 @@ import org.springframework.web.servlet.ModelAndView;
 import exception.BoardException;
 import exception.LoginException;
 import logic.Board;
+import logic.Comment;
 import logic.ShopService;
 import util.CipherUtil;
 
@@ -136,6 +137,7 @@ public class BoardController {
 	public ModelAndView detail (Integer num){
 		ModelAndView mav = new ModelAndView();
 		Board board = service.getBoard(num);
+		mav.addObject("board",board);
 		service.addReadcnt(num); // 조회수 1증가
 		if(board.getBoardid() ==null || board.getBoardid().equals("1")) {
 			mav.addObject("boardName","공지사항");
@@ -144,7 +146,13 @@ public class BoardController {
 		}else if(board.getBoardid().equals("3")) {
 			mav.addObject("boardName","QnA");
 		}
-		mav.addObject("board",board);
+		List<Comment> commlist = service.commlist(num);
+		System.out.println(commlist);
+		mav.addObject("commlist",commlist);
+		//유효성검증에 필요한 Comment 객체
+		Comment comm = new Comment();
+		comm.setNum(num);
+		mav.addObject("comment",comm);
 		return mav;
 	}
 	
@@ -309,5 +317,34 @@ public class BoardController {
 				+"/board/imgfile/"+upload.getOriginalFilename();
 		model.addAttribute("fileName",fileName);
 		return "ckedit"; // view이름. /WEB-INF/view/ckedit.jsp
+	}
+	
+	@RequestMapping("comment")
+	public ModelAndView comment(@Valid Comment comm,BindingResult bresult) {
+		ModelAndView mav = new ModelAndView("board/detail");
+		if(bresult.hasErrors()) {
+			mav.getModel().putAll(bresult.getModel());
+			//bresult.reject("error.input.writer");
+			//bresult.reject("error.input.content");
+			return mav;
+		}
+		int seq = service.commmaxseq(comm.getNum()); // num에 해당하는 최대 seq 컬럼의 값
+		comm.setSeq(++seq);
+		service.comminsert(comm);
+		mav.setViewName("redirect:detail?num="+comm.getNum()+"#comment");
+		return mav;
+	}
+	@RequestMapping("commdel")
+	public String commdel(int num, int seq, String pass) {
+		// 현재 모든 댓글을 아무나 삭제가능=> 수정 필요
+		// 업무요건1 : 회원만 댓글 작성 가능 => 작성한 글만 삭제가능
+		// 업무요건2 : 로그아웃 상태에서 댓글 작성가능 => 비밀번호 추가. 비밀번호 검증필요
+		Comment dbcomm = service.commSelectOne(num,seq);
+		if(pass.equals(dbcomm.getPass())) {
+			service.commdel(num,seq,pass);
+		}else {
+			throw new BoardException("댓글삭제 실패", "detail?num="+num+"#comment");
+		}
+			return "redirect:detail?num="+num+"#comment";
 	}
 }
