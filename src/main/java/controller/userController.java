@@ -211,7 +211,20 @@ public class userController {
 		System.out.println(jsondetail.get("id"));
 		System.out.println(jsondetail.get("name"));
 		System.out.println(jsondetail.get("email"));
-		return null;
+		//======== 이전까지 내용 네이버로 부터 정보 가져옴
+		String userid = jsondetail.get("id").toString();
+		User user = service.selectUserOne(userid);
+		if(user ==null) {
+			user = new User();
+			user.setUserid(userid);
+			user.setUsername(jsondetail.get("name").toString());
+			String email = jsondetail.get("email").toString();
+			user.setEmail(this.emailEncrypt(email, userid));
+			user.setChannel("naver");
+			service.userinsert(user);
+		}
+		session.setAttribute("loginUser", user);
+		return "redirect:mypage?userid="+user.getUserid();
 	}
 	
 	@PostMapping("join") // 회원가입

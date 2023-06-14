@@ -218,6 +218,7 @@ public class AjaxController {
 		map.put("exdate", exdate); // 조회기준일
 		map.put("trlist", trlist); // 환율 목록
 //		return trlist;
+	//	service.exchangeinsert(map);
 		return map;
 	}	
 	/*

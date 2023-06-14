@@ -291,4 +291,11 @@ public class ShopService {
 	public Comment commSelectOne(int num, int seq) {
 		return commentdao.selectOne(num, seq);
 	}
+
+	public void exchangeinsert(Map<String, Object> map) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 } 

@@ -21,6 +21,7 @@ import lombok.ToString;
 public class User {
 	@Size(min=3,max=10,message="아이디는 3자이상 10자이하로 입력하세요")
 	private String userid;
+	private String channel; // 네이버 소셜 로그인을 위한 추가
 	@Size(min=3,max=10,message="비밀번호는 3자이상 10자이하로 입력하세요")
 	private String password;
 	@NotEmpty(message="이름 입력하셈")

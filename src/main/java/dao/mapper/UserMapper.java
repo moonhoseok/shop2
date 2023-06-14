@@ -13,9 +13,9 @@ import logic.User;
 public interface UserMapper {
 	
 	@Insert("insert into usersecurity (userid,username,password,"
-			+" birthday, phoneno, postcode, address, email) values"
+			+" birthday, phoneno, postcode, address, email, channel) values"
 			+" (#{userid},#{username},#{password},#{birthday},"
-			+ "#{phoneno},#{postcode},#{address},#{email})")
+			+ "#{phoneno},#{postcode},#{address},#{email},#{channel})")
 	void insert(User user);
 
 	@Select({"<script>",
