@@ -21,6 +21,7 @@ import dao.ItemDao;
 import dao.SaleDao;
 import dao.SaleItemDao;
 import dao.UserDao;
+import dao.ExDao;
 
 
 
@@ -38,6 +39,8 @@ public class ShopService {
 	private BoardDao boarddao;
 	@Autowired
 	private CommentDao commentdao;
+	@Autowired
+	private ExDao exDao;
 	
 	public List<Item> itemList(){
 		return itemdao.list();
@@ -292,9 +295,8 @@ public class ShopService {
 		return commentdao.selectOne(num, seq);
 	}
 
-	public void exchangeinsert(Map<String, Object> map) {
-		// TODO Auto-generated method stub
-		
+	public void exchangeInsert(Exchange ex) {
+		exDao.insert(ex);
 	}
 
 
