@@ -465,15 +465,16 @@ public class userController {
 		User loginUser = (User)session.getAttribute("loginUser");
 		// password : 현재 비밀번호
 		//loginUser.getPassword() : 로그인된 비밀번호 
-		if(!password.equals(loginUser.getPassword())) {
+		
+		if(!passwordHash(password).equals(loginUser.getPassword())) {
 			throw new LoginException
 			("비밀번호를 확인하세요", "password?userid="+loginUser.getUserid());
 		}
 		try {
-			service.userChgpass(loginUser.getUserid(), chgpass);
+			service.userChgpass(loginUser.getUserid(), passwordHash(chgpass));
+			loginUser.setPassword(passwordHash(chgpass));
 			User user = service.selectUserOne(loginUser.getUserid());
 			//session.setAttribute("loginUser",user); // 로그인정보에 바뀐 정보로 수정
-			loginUser.setPassword(chgpass);
 			return "redirect:mypage?userid="+loginUser.getUserid();
 		} catch (Exception e) {
 			e.printStackTrace();

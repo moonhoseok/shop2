@@ -21,6 +21,7 @@ import dao.ItemDao;
 import dao.SaleDao;
 import dao.SaleItemDao;
 import dao.UserDao;
+import util.CipherUtil;
 import dao.ExDao;
 
 
@@ -41,6 +42,17 @@ public class ShopService {
 	private CommentDao commentdao;
 	@Autowired
 	private ExDao exDao;
+	private CipherUtil cipher;
+	
+	public String emailDecrypt(User user){
+		try {
+			String key = cipher.makehash(user.getUserid(), "SHA-256");
+			return cipher.decrypt(user.getEmail(), key);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null; // 문자열로 암호문 리턴
+	}
 	
 	public List<Item> itemList(){
 		return itemdao.list();

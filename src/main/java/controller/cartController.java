@@ -1,11 +1,15 @@
 package controller;
 
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import exception.CartEmptyException;
@@ -81,6 +85,39 @@ public class cartController {
 		return null; // view의 이름 리턴. null인 경우 url과 같은 이름을 호출
 					// WEB-INF/view/cart/checkout.jsp
 	}
+	/*
+	 *  kakao 결제 : ajax으로 요청됨. => 
+	 *  	pg : "kakaopay",					// 상점구분, 카카오페이
+ 			pay_method : "card",				// 카드 결제
+ 			merchant_uid : json.merchant_uid,	// 주문번호 : 주문별로 유일한 값이 필요. userid-session id 값
+ 			name : json.name,					// 주문상품명. 사과 외 3건
+ 			amount : json.amount,				// 주문금액.
+ 			buyer_email : "ans4649@naver.com"	// 주문자 이메일 테스트.
+ 			buyer_name : json.buyer_name,		// 주문자 성명
+ 			buyer_tel : json.buyer_tel,			// 주문자전화번호
+ 			buyer_addr : json.buyer_addr,		// 주문자 주소
+ 			buyer_postcode : json.buyer_postcode// 주문자 우편번호
+	 */
+	@RequestMapping("kakao")
+	@ResponseBody
+	public Map<String, Object> kakao(HttpSession session){
+		Map<String, Object> map = new HashMap<>();
+		
+		Cart cart = (Cart)session.getAttribute("CART");
+		User loginUser = (User)session.getAttribute("loginUser");
+		map.put("merchant_uid", loginUser.getUserid()+"-"+session.getId());
+		map.put("name", cart.getItemSetList().get(0).getItem().getName()
+				+"외"+(cart.getItemSetList().size()-1));
+		map.put("amount", cart.getTotal());
+		String email = service.emailDecrypt(loginUser);
+		map.put("buyer_email", email); // 현재사용안함. 복호화필요
+		map.put("buyer_name", loginUser.getUsername());
+		map.put("buyer_tel", loginUser.getPhoneno());
+		map.put("buyer_addr", loginUser.getAddress());
+		map.put("buyer_email", loginUser.getPostcode());
+		return map; // 클라이언트는 json 객체로 전달
+	}
+	
 	/*
 	 * 주문확정
 	 * 1. 로그인상태, 장바구니 상품존재 => aop로 설정
